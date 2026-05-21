@@ -1,6 +1,8 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+import { User } from "@supabase/supabase-js";
 
 export type FlowType = "cash_in" | "income" | "expense" | "salary";
 
@@ -28,6 +30,8 @@ interface FinanceContextProps {
   updateCompanyProfile: (profile: Partial<CompanyProfile>) => void;
   theme: "dark" | "light";
   toggleTheme: () => void;
+  user: User | null;
+  logout: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextProps | undefined>(undefined);
@@ -90,48 +94,67 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile>({ name: "FinFlow Inc.", logoUrl: null });
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [isLoaded, setIsLoaded] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
-  // Load from local storage
+  // Initialize Auth & Theme
   useEffect(() => {
     try {
-      const storedTxs = localStorage.getItem("finflow_transactions_v2");
-      const storedProfile = localStorage.getItem("finflow_company_profile");
-
-      if (storedTxs) {
-        setTransactions(JSON.parse(storedTxs));
-      } else {
-        setTransactions(MOCK_TRANSACTIONS);
-        localStorage.setItem("finflow_transactions_v2", JSON.stringify(MOCK_TRANSACTIONS));
-      }
-
-      if (storedProfile) {
-        setCompanyProfile(JSON.parse(storedProfile));
-      }
-
       const storedTheme = localStorage.getItem("finflow_theme");
       if (storedTheme === "light" || storedTheme === "dark") {
         setTheme(storedTheme);
       }
-
     } catch (e) {
-      console.error("Failed to load local finance storage data: ", e);
-      setTransactions(MOCK_TRANSACTIONS);
+      console.error(e);
     }
+    
+    // Check active session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
     setIsLoaded(true);
+    return () => subscription.unsubscribe();
   }, []);
 
-  // Sync back to local storage
+  // Fetch data when user changes
   useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("finflow_transactions_v2", JSON.stringify(transactions));
+    if (!user) {
+      setTransactions([]);
+      setCompanyProfile({ name: "FinFlow Inc.", logoUrl: null });
+      return;
     }
-  }, [transactions, isLoaded]);
 
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem("finflow_company_profile", JSON.stringify(companyProfile));
-    }
-  }, [companyProfile, isLoaded]);
+    const fetchData = async () => {
+      // Fetch profile
+      const { data: profile } = await supabase
+        .from("company_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+        
+      if (profile) {
+        setCompanyProfile({ name: profile.company_name, logoUrl: profile.logo_url });
+      }
+
+      // Fetch transactions
+      const { data: txs } = await supabase
+        .from("transactions")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("date", { ascending: false })
+        .order("time", { ascending: false });
+
+      if (txs) {
+        setTransactions(txs as Transaction[]);
+      }
+    };
+
+    fetchData();
+  }, [user]);
 
   useEffect(() => {
     if (isLoaded) {
@@ -148,21 +171,50 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setTheme(prev => prev === "dark" ? "light" : "dark");
   };
 
-  const addTransaction = (tx: Omit<Transaction, "id">) => {
-    const newTx: Transaction = {
-      ...tx,
-      id: `tx-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
-    };
-    // Prepend to show newest transactions first
-    setTransactions((prev) => [newTx, ...prev]);
+  const addTransaction = async (tx: Omit<Transaction, "id">) => {
+    if (!user) return;
+    const { data, error } = await supabase
+      .from("transactions")
+      .insert({ ...tx, user_id: user.id })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding transaction:", error);
+      return;
+    }
+    setTransactions((prev) => [data as Transaction, ...prev]);
   };
 
-  const deleteTransaction = (id: string) => {
+  const deleteTransaction = async (id: string) => {
+    if (!user) return;
+    const { error } = await supabase.from("transactions").delete().eq("id", id);
+    if (error) {
+      console.error("Error deleting transaction:", error);
+      return;
+    }
     setTransactions((prev) => prev.filter((t) => t.id !== id));
   };
 
-  const updateCompanyProfile = (profile: Partial<CompanyProfile>) => {
-    setCompanyProfile((prev) => ({ ...prev, ...profile }));
+  const updateCompanyProfile = async (profile: Partial<CompanyProfile>) => {
+    if (!user) return;
+    const newProfile = { ...companyProfile, ...profile };
+    setCompanyProfile(newProfile);
+
+    const { error } = await supabase.from("company_profiles").upsert(
+      {
+        user_id: user.id,
+        company_name: newProfile.name,
+        logo_url: newProfile.logoUrl,
+      },
+      { onConflict: "user_id" }
+    );
+
+    if (error) console.error("Error updating profile:", error);
+  };
+
+  const logout = async () => {
+    await supabase.auth.signOut();
   };
 
   return (
@@ -174,7 +226,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         companyProfile,
         updateCompanyProfile,
         theme,
-        toggleTheme
+        toggleTheme,
+        user,
+        logout
       }}
     >
       {children}

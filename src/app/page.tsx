@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { FinanceProvider } from "../context/FinanceContext";
+import { FinanceProvider, useFinance } from "../context/FinanceContext";
 import { Sidebar } from "../components/Sidebar";
 import { Dashboard } from "../components/Dashboard";
 import { CashIn } from "../components/CashIn";
@@ -9,14 +9,19 @@ import { Income } from "../components/Income";
 import { Expense } from "../components/Expense";
 import { Reports } from "../components/Reports";
 import { Settings } from "../components/Settings";
+import { Auth } from "../components/Auth";
 
-export default function Home() {
+function MainApp() {
+  const { user } = useFinance();
   const [activeTab, setActiveTab] = useState<"dashboard" | "cash_in" | "income" | "expense" | "reports" | "settings">("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  if (!user) {
+    return <Auth />;
+  }
+
   return (
-    <FinanceProvider>
-      <div className="flex h-screen bg-background overflow-hidden font-sans">
+    <div className="flex h-screen bg-background overflow-hidden font-sans">
         {/* Sidebar Navigation */}
         <Sidebar
           activeTab={activeTab}
@@ -64,6 +69,13 @@ export default function Home() {
           </main>
         </div>
       </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <FinanceProvider>
+      <MainApp />
     </FinanceProvider>
   );
 }

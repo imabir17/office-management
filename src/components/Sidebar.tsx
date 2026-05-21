@@ -16,7 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   setIsOpen,
 }) => {
-  const { transactions, theme, toggleTheme } = useFinance();
+  const { transactions, theme, toggleTheme, logout } = useFinance();
 
   // Calculate live net balance
   const totalInflow = transactions
@@ -149,6 +149,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             Theme
           </div>
           <span className="text-xs uppercase tracking-wider opacity-60">{theme}</span>
+        </button>
+
+        <button
+          className="nav-btn mb-3 border border-transparent hover:border-border"
+          onClick={logout}
+        >
+          <div className="flex items-center gap-3">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign Out
+          </div>
         </button>
 
         <div className="bg-panel border border-border p-3 rounded-sm shadow-sm">
