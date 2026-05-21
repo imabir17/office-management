@@ -150,7 +150,8 @@ export const Reports: React.FC = () => {
   }, [transactions, dateFilter, startDate]);
 
   const getPdfFilename = () => {
-    const safeCompanyName = companyProfile.name.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
+    const rawName = companyProfile?.name?.trim() || "FINFLOW_INC";
+    const safeCompanyName = rawName.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
     
     if (dateFilter === "today") {
       const todayStr = new Date().toISOString().split("T")[0];
