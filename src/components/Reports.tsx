@@ -149,6 +149,20 @@ export const Reports: React.FC = () => {
     return balance;
   }, [transactions, dateFilter, startDate]);
 
+  const getPdfFilename = () => {
+    const safeCompanyName = companyProfile.name.replace(/[^a-zA-Z0-9]/g, "_").toUpperCase();
+    
+    if (dateFilter === "today") {
+      const todayStr = new Date().toISOString().split("T")[0];
+      return `${safeCompanyName}_STATEMENT_${todayStr}.pdf`;
+    }
+    if (dateFilter === "custom" && startDate && endDate) {
+      return `${safeCompanyName}_STATEMENT_${startDate}_TO_${endDate}.pdf`;
+    }
+    
+    return `${safeCompanyName}_STATEMENT_${dateFilter.toUpperCase()}.pdf`;
+  };
+
   return (
     <div className="flex-1 p-8 overflow-y-auto">
       <div className="flex items-center justify-between mb-8">
@@ -331,7 +345,7 @@ export const Reports: React.FC = () => {
                         reportTotals={reportTotals}
                       />
                     }
-                    fileName={`Statement_${dateFilter}.pdf`}
+                    fileName={getPdfFilename()}
                     className="btn btn-primary"
                   >
                     {({ loading }) => (loading ? "Generating..." : "Download PDF")}
