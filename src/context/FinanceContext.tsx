@@ -181,6 +181,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (error) {
       console.error("Error adding transaction:", error);
+      alert("Failed to save: " + error.message);
       return;
     }
     setTransactions((prev) => [data as Transaction, ...prev]);
