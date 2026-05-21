@@ -24,6 +24,8 @@ const styles = StyleSheet.create({
   },
   logo: {
     objectFit: "contain",
+    objectPosition: "left",
+    maxHeight: 60,
   },
   companyName: {
     fontSize: 18,
