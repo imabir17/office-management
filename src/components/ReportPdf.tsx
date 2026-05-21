@@ -163,7 +163,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({
             {companyProfile.logoUrl ? (
               <Image style={styles.logo} src={companyProfile.logoUrl} />
             ) : (
-              <Text style={styles.companyName} maxLines={1}>{companyProfile.name.toUpperCase()}</Text>
+              <Text style={styles.companyName}>{companyProfile.name.toUpperCase()}</Text>
             )}
           </View>
           <View style={styles.statementInfo}>
@@ -174,7 +174,7 @@ export const ReportPdf: React.FC<ReportPdfProps> = ({
         </View>
         
         {companyProfile.logoUrl && (
-          <Text style={{ ...styles.companyName, marginBottom: 10 }} maxLines={1}>
+          <Text style={{ ...styles.companyName, marginBottom: 10 }}>
             {companyProfile.name.toUpperCase()}
           </Text>
         )}
