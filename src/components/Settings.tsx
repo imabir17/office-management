@@ -1,9 +1,5 @@
 "use client";
 
-import React, { useState, useRef } from "react";
-import { useFinance } from "../context/FinanceContext";
-
-export const Settings: React.FC = () => {
 import React, { useState, useRef, useEffect } from "react";
 import { useFinance } from "../context/FinanceContext";
 import { supabase } from "../lib/supabase";
