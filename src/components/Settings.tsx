@@ -3,9 +3,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useFinance } from "../context/FinanceContext";
 import { supabase } from "../lib/supabase";
+import { useToast } from "../context/ToastContext";
 
 export const Settings: React.FC = () => {
   const { user, companyProfile, updateCompanyProfile, logAuditAction } = useFinance();
+  const { addToast } = useToast();
   const [name, setName] = useState(companyProfile?.name || "");
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -49,11 +51,12 @@ export const Settings: React.FC = () => {
     });
 
     if (error) {
-      alert("Failed to invite: " + error.message);
+      addToast("Failed to invite: " + error.message, "error");
       return;
     }
 
     setInviteEmail("");
+    addToast(`Successfully invited ${inviteEmail}`, "success");
     await logAuditAction(`Invited team member: ${inviteEmail}`);
     // Refresh team list
     const { data } = await supabase.from("team_members").select("*").eq("company_id", companyProfile.id);
@@ -62,7 +65,7 @@ export const Settings: React.FC = () => {
 
   const handleRemoveMember = async (id: string, email: string) => {
     if (email === user?.email) {
-      alert("You cannot remove yourself!");
+      addToast("You cannot remove yourself!", "error");
       return;
     }
     if (!confirm(`Remove ${email} from the workspace?`)) return;
@@ -75,20 +78,20 @@ export const Settings: React.FC = () => {
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match!");
+      addToast("Passwords do not match!", "error");
       return;
     }
     if (newPassword.length < 6) {
-      alert("Password must be at least 6 characters.");
+      addToast("Password must be at least 6 characters.", "error");
       return;
     }
 
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     
     if (error) {
-      alert("Failed to update password: " + error.message);
+      addToast("Failed to update password: " + error.message, "error");
     } else {
-      alert("Password updated successfully!");
+      addToast("Password updated successfully!", "success");
       setNewPassword("");
       setConfirmPassword("");
       await logAuditAction(`Updated account password`);
@@ -98,7 +101,7 @@ export const Settings: React.FC = () => {
   const handleNameSave = (e: React.FormEvent) => {
     e.preventDefault();
     updateCompanyProfile({ name });
-    alert("Company name updated successfully!");
+    addToast("Company name updated successfully!", "success");
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -106,7 +109,7 @@ export const Settings: React.FC = () => {
     if (!file) return;
 
     if (file.size > 2 * 1024 * 1024) {
-      alert("Image is too large. Please upload an image smaller than 2MB.");
+      addToast("Image is too large. Please upload an image smaller than 2MB.", "error");
       return;
     }
 

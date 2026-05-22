@@ -11,18 +11,47 @@ import { Reports } from "../components/Reports";
 import { Settings } from "../components/Settings";
 import { Auth } from "../components/Auth";
 import { Onboarding } from "../components/Onboarding";
+import { ToastProvider } from "../context/ToastContext";
+import { ResetPassword } from "../components/ResetPassword";
 
 function MainApp() {
   const { user, companyProfile } = useFinance();
   const [activeTab, setActiveTab] = useState<"dashboard" | "cash_in" | "income" | "expense" | "reports" | "settings">("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+
+  useEffect(() => {
+    // Check if URL contains Supabase password recovery hash
+    if (window.location.hash.includes("type=recovery")) {
+      setIsRecoveryMode(true);
+    }
+  }, []);
+
+  const handleRecoveryComplete = async () => {
+    // Clear hash and exit recovery mode
+    window.history.replaceState(null, "", window.location.pathname);
+    setIsRecoveryMode(false);
+    // Sign out to force them back to the login screen as requested
+    const { supabase } = await import("../lib/supabase");
+    await supabase.auth.signOut();
+  };
+
+  if (isRecoveryMode) {
+    return (
+      <ResetPassword onSuccess={handleRecoveryComplete} />
+    );
+  }
 
   if (!user) {
-    return <Auth />;
+    return (
+      <Auth />
+    );
   }
 
   if (user && !companyProfile) {
-    return <Onboarding />;
+    return (
+      <Onboarding />
+    );
   }
 
   return (
@@ -79,8 +108,10 @@ function MainApp() {
 
 export default function Home() {
   return (
-    <FinanceProvider>
-      <MainApp />
-    </FinanceProvider>
+    <ToastProvider>
+      <FinanceProvider>
+        <MainApp />
+      </FinanceProvider>
+    </ToastProvider>
   );
 }

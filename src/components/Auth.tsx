@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import { supabase } from "../lib/supabase";
+import { useToast } from "../context/ToastContext";
 
 export const Auth = () => {
+  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +25,7 @@ export const Auth = () => {
           password,
         });
         if (error) throw error;
-        alert("Success! Please check your email for a confirmation link.");
+        addToast("Success! Please check your email for a confirmation link.", "success");
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -51,7 +53,7 @@ export const Auth = () => {
         redirectTo: window.location.origin,
       });
       if (error) throw error;
-      alert("Password reset email sent! Please check your inbox.");
+      addToast("Password reset email sent! Please check your inbox.", "success");
       setIsResetPassword(false);
     } catch (error: any) {
       setErrorMsg(error.message || "Failed to send reset email.");

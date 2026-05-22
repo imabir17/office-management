@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { User } from "@supabase/supabase-js";
+import { useToast } from "./ToastContext";
 
 export type FlowType = "cash_in" | "income" | "expense" | "salary";
 
@@ -93,6 +94,7 @@ const MOCK_TRANSACTIONS: Transaction[] = [
 ];
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { addToast } = useToast();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
@@ -221,7 +223,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     if (error) {
       console.error("Error adding transaction:", error);
-      alert("Failed to save: " + error.message);
+      addToast("Failed to save: " + error.message, "error");
       return;
     }
     setTransactions((prev) => [data as Transaction, ...prev]);

@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { useFinance } from "../context/FinanceContext";
+import { useFinance, Transaction } from "../context/FinanceContext";
+import { useToast } from "../context/ToastContext";
 
 export const CashIn: React.FC = () => {
   const { transactions, addTransaction, deleteTransaction } = useFinance();
+  const { addToast } = useToast();
 
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -38,10 +40,22 @@ export const CashIn: React.FC = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const amountNum = parseFloat(txAmount);
-    if (isNaN(amountNum) || amountNum <= 0) return alert("Please enter a valid amount");
-    if (!txPayer.trim()) return alert("Please enter the Payer");
-    if (!txReceiver.trim()) return alert("Please enter the Receiver");
-    if (!txPurpose.trim()) return alert("Please enter the Purpose");
+    if (isNaN(amountNum) || amountNum <= 0) {
+      addToast("Please enter a valid amount", "error");
+      return;
+    }
+    if (!txPayer.trim()) {
+      addToast("Please enter the Payer", "error");
+      return;
+    }
+    if (!txReceiver.trim()) {
+      addToast("Please enter the Receiver", "error");
+      return;
+    }
+    if (!txPurpose.trim()) {
+      addToast("Please enter the Purpose", "error");
+      return;
+    }
     
     const currentTime = new Date().toTimeString().split(' ')[0];
 
