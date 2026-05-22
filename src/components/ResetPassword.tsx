@@ -46,9 +46,7 @@ export const ResetPassword: React.FC<ResetPasswordProps> = ({ onSuccess }) => {
     <div className="flex h-screen w-full items-center justify-center bg-[var(--background)] p-4">
       <div className="panel w-full max-w-md shadow-2xl">
         <div className="text-center mb-8">
-          <div className="inline-flex w-12 h-12 rounded-md bg-[var(--primary)] items-center justify-center text-white font-bold text-2xl mb-4">
-            ৳
-          </div>
+          <img src="/logo.png" alt="FinFlow Logo" className="w-16 h-16 object-contain mb-4 mx-auto" />
           <h1 className="title">Reset Password</h1>
           <p className="subtitle mt-1">Please enter your new password below</p>
         </div>
