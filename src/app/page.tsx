@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FinanceProvider, useFinance } from "../context/FinanceContext";
 import { Sidebar } from "../components/Sidebar";
 import { Dashboard } from "../components/Dashboard";
