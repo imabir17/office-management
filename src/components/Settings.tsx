@@ -12,8 +12,6 @@ export const Settings: React.FC = () => {
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -73,29 +71,6 @@ export const Settings: React.FC = () => {
     await supabase.from("team_members").delete().eq("id", id);
     await logAuditAction(`Removed team member: ${email}`);
     setTeamMembers(prev => prev.filter(m => m.id !== id));
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      addToast("Passwords do not match!", "error");
-      return;
-    }
-    if (newPassword.length < 6) {
-      addToast("Password must be at least 6 characters.", "error");
-      return;
-    }
-
-    const { error } = await supabase.auth.updateUser({ password: newPassword });
-    
-    if (error) {
-      addToast("Failed to update password: " + error.message, "error");
-    } else {
-      addToast("Password updated successfully!", "success");
-      setNewPassword("");
-      setConfirmPassword("");
-      await logAuditAction(`Updated account password`);
-    }
   };
 
   const handleNameSave = (e: React.FormEvent) => {
@@ -266,44 +241,6 @@ export const Settings: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
-
-      {/* Account Security */}
-      <div className="panel flex flex-col mt-8 max-w-4xl">
-        <div className="mb-4 pb-4 border-b border-border">
-          <h2 className="text-lg font-bold">Account Security</h2>
-          <p className="text-xs text-text-muted mt-1">Update your password here. If you used a forgot password link, set your new password below.</p>
-        </div>
-
-        <form onSubmit={handleUpdatePassword} className="flex flex-col gap-4 max-w-sm">
-          <div className="flex flex-col gap-1.5">
-            <label className="form-label">New Password</label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder="••••••••"
-              value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="form-label">Confirm New Password</label>
-            <input
-              type="password"
-              className="form-control"
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-          <div className="mt-2">
-            <button type="submit" className="btn btn-primary w-full md:w-auto">
-              Update Password
-            </button>
-          </div>
-        </form>
       </div>
     </div>
   );
