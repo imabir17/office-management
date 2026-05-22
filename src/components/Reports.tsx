@@ -341,7 +341,7 @@ export const Reports: React.FC = () => {
                         transactions={filteredTransactions} 
                         startingBalance={startingBalance}
                         dateFilter={dateFilter} 
-                        companyProfile={companyProfile} 
+                        companyProfile={companyProfile || { id: "", name: "FinFlow Inc.", logoUrl: null }} 
                         generatedBy={generatedBy}
                         reportTotals={reportTotals}
                       />
