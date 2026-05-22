@@ -66,7 +66,7 @@ export const Auth = () => {
     <div className="flex h-screen w-full items-center justify-center bg-[var(--background)] p-4">
       <div className="panel w-full max-w-md shadow-2xl">
         <div className="text-center mb-8">
-          <img src="/logo.png" alt="FinFlow Logo" className="w-16 h-16 object-contain mb-4 mx-auto" />
+          <img src="/logo.png" alt="FinFlow Logo" className="w-16 h-16 object-cover rounded-full mb-4 mx-auto shadow-md" />
           <h1 className="title">Welcome to FinFlow</h1>
           <p className="subtitle mt-1">Enterprise Financial Management</p>
         </div>

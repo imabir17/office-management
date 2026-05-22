@@ -77,7 +77,7 @@ function MainApp() {
           {/* Mobile Header Bar */}
           <header className="md:hidden flex items-center justify-between p-4 bg-panel border-b border-border shrink-0">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="FinFlow Logo" className="w-8 h-8 object-contain rounded-sm" />
+              <img src="/logo.png" alt="FinFlow Logo" className="w-8 h-8 object-cover rounded-full" />
               <span className="font-bold text-lg tracking-tight">FinFlow</span>
             </div>
             <button

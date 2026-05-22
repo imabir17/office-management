@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   return (
     <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 bg-panel border-r border-border transform transition-transform duration-200 ease-in-out flex flex-col h-full ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}`}>
       <div className="p-6 border-b border-border flex items-center gap-3">
-        <img src="/logo.png" alt="FinFlow Logo" className="w-8 h-8 object-contain rounded-sm" />
+        <img src="/logo.png" alt="FinFlow Logo" className="w-8 h-8 object-cover rounded-full" />
         <span className="font-bold text-lg tracking-tight">FinFlow</span>
       </div>
 
