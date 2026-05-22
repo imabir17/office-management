@@ -10,14 +10,19 @@ import { Expense } from "../components/Expense";
 import { Reports } from "../components/Reports";
 import { Settings } from "../components/Settings";
 import { Auth } from "../components/Auth";
+import { Onboarding } from "../components/Onboarding";
 
 function MainApp() {
-  const { user } = useFinance();
+  const { user, companyProfile } = useFinance();
   const [activeTab, setActiveTab] = useState<"dashboard" | "cash_in" | "income" | "expense" | "reports" | "settings">("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   if (!user) {
     return <Auth />;
+  }
+
+  if (user && !companyProfile) {
+    return <Onboarding />;
   }
 
   return (

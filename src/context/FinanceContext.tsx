@@ -18,6 +18,7 @@ export interface Transaction {
 }
 
 export interface CompanyProfile {
+  id: string;
   name: string;
   logoUrl: string | null;
 }
@@ -26,12 +27,14 @@ interface FinanceContextProps {
   transactions: Transaction[];
   addTransaction: (tx: Omit<Transaction, "id">) => void;
   deleteTransaction: (id: string) => void;
-  companyProfile: CompanyProfile;
+  companyProfile: CompanyProfile | null;
   updateCompanyProfile: (profile: Partial<CompanyProfile>) => void;
   theme: "dark" | "light";
   toggleTheme: () => void;
   user: User | null;
   logout: () => Promise<void>;
+  logAuditAction: (action: string) => Promise<void>;
+  refreshCompanyData: () => Promise<void>;
 }
 
 const FinanceContext = createContext<FinanceContextProps | undefined>(undefined);
@@ -91,7 +94,7 @@ const MOCK_TRANSACTIONS: Transaction[] = [
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [companyProfile, setCompanyProfile] = useState<CompanyProfile>({ name: "FinFlow Inc.", logoUrl: null });
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [isLoaded, setIsLoaded] = useState(false);
   const [user, setUser] = useState<User | null>(null);
@@ -121,40 +124,73 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   // Fetch data when user changes
-  useEffect(() => {
-    if (!user) {
+  const fetchData = async () => {
+    if (!user || !user.email) {
       setTransactions([]);
-      setCompanyProfile({ name: "FinFlow Inc.", logoUrl: null });
+      setCompanyProfile(null);
       return;
     }
 
-    const fetchData = async () => {
-      // Fetch profile
-      const { data: profile } = await supabase
-        .from("company_profiles")
-        .select("*")
-        .eq("user_id", user.id)
+    try {
+      // 1. Find user's company membership
+      const { data: membership } = await supabase
+        .from("team_members")
+        .select("company_id")
+        .eq("email", user.email)
+        .limit(1)
         .single();
-        
-      if (profile) {
-        setCompanyProfile({ name: profile.company_name, logoUrl: profile.logo_url });
+
+      if (!membership) {
+        setCompanyProfile(null);
+        setTransactions([]);
+        return;
       }
 
-      // Fetch transactions
+      const compId = membership.company_id;
+
+      // 2. Fetch the company profile
+      const { data: comp } = await supabase
+        .from("companies")
+        .select("*")
+        .eq("id", compId)
+        .single();
+
+      if (comp) {
+        setCompanyProfile({ id: comp.id, name: comp.name, logoUrl: comp.logo_url });
+      }
+
+      // 3. Fetch transactions for the company
       const { data: txs } = await supabase
         .from("transactions")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("company_id", compId)
         .order("date", { ascending: false })
         .order("time", { ascending: false });
 
       if (txs) {
         setTransactions(txs as Transaction[]);
       }
-    };
+    } catch (e) {
+      console.error("Error fetching multi-tenant data:", e);
+    }
+  };
 
+  useEffect(() => {
     fetchData();
   }, [user]);
+
+  const refreshCompanyData = async () => {
+    await fetchData();
+  };
+
+  const logAuditAction = async (action: string) => {
+    if (!user || !user.email || !companyProfile) return;
+    await supabase.from("audit_logs").insert({
+      company_id: companyProfile.id,
+      user_email: user.email,
+      action
+    });
+  };
 
   useEffect(() => {
     if (isLoaded) {
@@ -172,10 +208,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const addTransaction = async (tx: Omit<Transaction, "id">) => {
-    if (!user) return;
+    if (!user || !companyProfile) return;
     const { data, error } = await supabase
       .from("transactions")
-      .insert({ ...tx, user_id: user.id })
+      .insert({ 
+        ...tx, 
+        company_id: companyProfile.id,
+        created_by: user.email 
+      })
       .select()
       .single();
 
@@ -185,36 +225,43 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       return;
     }
     setTransactions((prev) => [data as Transaction, ...prev]);
+    logAuditAction(`Added a ${tx.type} transaction for ${tx.amount}`);
   };
 
   const deleteTransaction = async (id: string) => {
-    if (!user) return;
+    if (!user || !companyProfile) return;
     const { error } = await supabase.from("transactions").delete().eq("id", id);
     if (error) {
       console.error("Error deleting transaction:", error);
       return;
     }
     setTransactions((prev) => prev.filter((t) => t.id !== id));
+    logAuditAction(`Deleted transaction ID: ${id}`);
   };
 
   const updateCompanyProfile = async (profile: Partial<CompanyProfile>) => {
-    if (!user) return;
-    const newProfile = { ...companyProfile, ...profile };
-    setCompanyProfile(newProfile);
-
-    const { error } = await supabase.from("company_profiles").upsert(
+    if (!user || !companyProfile) return;
+    
+    const { error } = await supabase.from("companies").update(
       {
-        user_id: user.id,
-        company_name: newProfile.name,
-        logo_url: newProfile.logoUrl,
-      },
-      { onConflict: "user_id" }
-    );
+        name: profile.name || companyProfile.name,
+        logo_url: profile.logoUrl !== undefined ? profile.logoUrl : companyProfile.logoUrl,
+      }
+    ).eq("id", companyProfile.id);
 
-    if (error) console.error("Error updating profile:", error);
+    if (error) {
+      console.error("Error updating profile:", error);
+      return;
+    }
+    
+    setCompanyProfile((prev) => prev ? { ...prev, ...profile } : null);
+    logAuditAction(`Updated company profile settings`);
   };
 
   const logout = async () => {
+    if (user && companyProfile) {
+      await logAuditAction(`Logged out`);
+    }
     await supabase.auth.signOut();
   };
 
@@ -229,7 +276,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         theme,
         toggleTheme,
         user,
-        logout
+        logout,
+        logAuditAction,
+        refreshCompanyData
       }}
     >
       {children}
